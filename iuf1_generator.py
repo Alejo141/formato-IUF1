@@ -111,13 +111,16 @@ with st.sidebar:
 # ── Carga de archivos ─────────────────────────────────────────────────────────
 st.markdown('<div class="section-header">1 · Carga de archivos</div>', unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
     st.caption("📋 **Base de Usuarios** (BD_Usuarios)")
     file_usuarios = st.file_uploader("Usuarios.xlsx", type=["xlsx"], key="usuarios")
 with col2:
     st.caption("🧾 **Consolidado de Facturación** del mes")
     file_fact = st.file_uploader("Fact_MM_YYYY.xlsx", type=["xlsx"], key="fact")
+with col3:
+    st.caption("💳 **Cartera por NIU** (opcional)")
+    file_cartera = st.file_uploader("Cartera_NIU.xlsx", type=["xlsx"], key="cartera")
 
 # ── Procesamiento ─────────────────────────────────────────────────────────────
 if file_usuarios and file_fact:
@@ -144,6 +147,18 @@ if file_usuarios and file_fact:
         # Limpiar NIU en facturación
         df_fact["NIU_KEY"] = df_fact["nui"].astype(str).str.replace("-","",regex=False).str.strip()
         df_fact["ID_FACTURA_CLEAN"] = df_fact["nfacturasiigo"].astype(str).str.replace("-","",regex=False).str.strip()
+
+        # --- Leer Cartera (opcional) ---
+        df_cartera = None
+        if file_cartera:
+            df_cartera = pd.read_excel(file_cartera, sheet_name="Cartera_Total_NIU")
+            cols_req_car = ["NIU","TARIFA TOTAL"]
+            faltantes3 = [c for c in cols_req_car if c not in df_cartera.columns]
+            if faltantes3:
+                st.markdown(f'<div class="error-box">❌ Faltan columnas en Cartera: {faltantes3}</div>', unsafe_allow_html=True)
+                st.stop()
+            df_cartera["NIU_KEY"] = df_cartera["NIU"].astype(str).str.replace("-","",regex=False).str.strip()
+            df_cartera = df_cartera[["NIU_KEY","TARIFA TOTAL"]].rename(columns={"TARIFA TOTAL":"CARTERA_VALOR"})
 
         # --- Cruce ---
         # Base: todos los usuarios → se cruza con facturación (left desde usuarios)
@@ -217,7 +232,18 @@ if file_usuarios and file_fact:
         # Campos vacíos (usuario los llena)
         df["FACT CONSUMO"] = df["ID_FACTURA_CLEAN"].apply(lambda x: "" if pd.notna(x) and x != "" else 0)
         df["VAL REFACT"]   = 0.0000
-        df["VAL MORA"]     = 0.0000
+        # VAL MORA: desde cartera si se cargó, cruzando por NIU; 0 si no hay cartera o no hay match
+        if df_cartera is not None:
+            df = df.merge(df_cartera, on="NIU_KEY", how="left")
+            df["VAL MORA"] = df["CARTERA_VALOR"].fillna(0.0).round(4)
+            df.drop(columns=["CARTERA_VALOR"], inplace=True)
+            con_mora = (df["VAL MORA"] > 0).sum()
+            st.markdown(
+                f'<div class="info-box">💳 Cartera cargada: <strong>{con_mora}</strong> NIU con saldo en VAL MORA.</div>',
+                unsafe_allow_html=True
+            )
+        else:
+            df["VAL MORA"] = 0.0000
         df["INT MORA"]     = 0.0000
         df["VAL SUBS"]     = df["ID_FACTURA_CLEAN"].apply(lambda x: "" if pd.notna(x) and x != "" else 0)
 
