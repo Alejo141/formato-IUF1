@@ -242,7 +242,7 @@ if file_usuarios and file_fact:
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Registros facturación", len(df_fact))
             c2.metric("Registros en IUF1", len(df_out))
-            c3.metric("Sin NIU en usuarios", int(sin_match))
+            c3.metric("Sin factura este mes", int(sin_fact))
             c4.metric("Días del mes", n_dias)
 
         # ── Exportar XLSX ─────────────────────────────────────────────────────
