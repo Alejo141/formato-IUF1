@@ -184,10 +184,11 @@ if file_usuarios and file_fact:
             axis=1
         )
         df["TIPO CORRI SALIDA"] = 1
-        df["DIAS PRES MES"]  = df["cantidad"]
+        # DIAS PRES MES: desde facturación; 0 si no tiene factura
+        df["DIAS PRES MES"]  = df["cantidad"].fillna(0).astype(int)
 
-        # ENERGIA GEN MES = Whd * DIAS PRES MES / 1000
-        df["ENERGIA GEN MES"] = (df["Whd"] * df["DIAS PRES MES"] / 1000).round(3)
+        # ENERGIA GEN MES = Whd * DIAS PRES MES / 1000; 0 si no tiene factura
+        df["ENERGIA GEN MES"] = (df["Whd"] * df["DIAS PRES MES"] / 1000).round(3).fillna(0)
 
         # disp promedio = DIAS PRES MES / dias del mes (fórmula; aquí calculado para previsualización)
         df["disp promedio"]   = (df["DIAS PRES MES"] / n_dias).round(4)
@@ -209,21 +210,21 @@ if file_usuarios and file_fact:
         df["FECH EXP FACT"]  = fmt_fecha(fecha_exp)
         df["FECH INI PERIO"] = fmt_fecha(fecha_ini)
 
-        df["DIAS FACT"]  = df["DIAS PRES MES"]
+        df["DIAS FACT"]  = df["DIAS PRES MES"]  # 0 para NIU sin factura
         df["ESTRATO"]    = 1
         df["TIPO LECT"]  = 3
 
         # Campos vacíos (usuario los llena)
-        df["FACT CONSUMO"] = ""
+        df["FACT CONSUMO"] = df["ID_FACTURA_CLEAN"].apply(lambda x: "" if pd.notna(x) and x != "" else 0)
         df["VAL REFACT"]   = 0.0000
         df["VAL MORA"]     = 0.0000
         df["INT MORA"]     = 0.0000
-        df["VAL SUBS"]     = ""
+        df["VAL SUBS"]     = df["ID_FACTURA_CLEAN"].apply(lambda x: "" if pd.notna(x) and x != "" else 0)
 
         # PORCE SUBS = VAL SUBS / FACT CONSUMO (vacío, se calcula cuando el usuario llene)
-        df["PORCE SUBS"]   = ""
+        df["PORCE SUBS"]   = df["ID_FACTURA_CLEAN"].apply(lambda x: "" if pd.notna(x) and x != "" else 0)
 
-        df["TARIFA"]        = ""
+        df["TARIFA"]        = df["ID_FACTURA_CLEAN"].apply(lambda x: "" if pd.notna(x) and x != "" else 0)
         df["VAL TOTAL FACT"] = ""  # = FACT CONSUMO
 
         # ── Orden de columnas IUF1 ───────────────────────────────────────────
