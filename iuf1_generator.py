@@ -146,15 +146,22 @@ if file_usuarios and file_fact:
         df_fact["ID_FACTURA_CLEAN"] = df_fact["nfacturasiigo"].astype(str).str.replace("-","",regex=False).str.strip()
 
         # --- Cruce ---
-        df = df_fact[["NIU_KEY","ID_FACTURA_CLEAN","cantidad"]].copy()
-        df = df.merge(
-            df_usr[["NIU_KEY","NIU_SUI","COD_LOCALIDAD","Whd","LONGITUD","LATITUD","VEREDA"]],
-            on="NIU_KEY", how="left"
+        # Base: todos los usuarios → se cruza con facturación (left desde usuarios)
+        # Usuarios sin factura ese mes quedan con ID_FACTURA_CLEAN y cantidad en NaN
+        df_fact_red = df_fact[["NIU_KEY","ID_FACTURA_CLEAN","cantidad"]].copy()
+        df = df_usr[["NIU_KEY","NIU_SUI","COD_LOCALIDAD","Whd","LONGITUD","LATITUD","VEREDA"]].merge(
+            df_fact_red, on="NIU_KEY", how="left"
         )
 
-        sin_match = df["NIU_SUI"].isna().sum()
-        if sin_match > 0:
-            st.markdown(f'<div class="info-box">⚠️ {sin_match} registros de facturación no encontraron NIU en la base de usuarios. Revisa los NIU sin coincidencia en la vista previa.</div>', unsafe_allow_html=True)
+        sin_fact = df["ID_FACTURA_CLEAN"].isna().sum()
+        en_fact  = df["ID_FACTURA_CLEAN"].notna().sum()
+        if sin_fact > 0:
+            st.markdown(
+                f'<div class="info-box">⚠️ <strong>{sin_fact}</strong> usuario(s) de la base '
+                f'<strong>no tienen factura</strong> en este mes (se incluyen en el IUF1 con '
+                f'campos de facturación vacíos). <strong>{en_fact}</strong> usuario(s) sí tienen factura.</div>',
+                unsafe_allow_html=True
+            )
 
         # ── Construir columnas IUF1 ──────────────────────────────────────────
 
