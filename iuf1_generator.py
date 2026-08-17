@@ -173,7 +173,16 @@ if file_usuarios and file_fact:
         df["ALTITUD"]        = 0
         df["LONGITUD"]       = df["LONGITUD"].apply(redondear_5dec)
         df["LATITUD"]        = df["LATITUD"].apply(redondear_5dec)
-        df["ID FACTURA"]     = df["ID_FACTURA_CLEAN"]
+        # ID FACTURA: si tiene factura → nfacturasiigo sin guiones
+        #             si NO tiene factura → FV + NIU + MMYYYY
+        mes_str = str(mes_sel).zfill(2)
+        anio_str = str(anio_sel)
+        df["ID FACTURA"] = df.apply(
+            lambda r: r["ID_FACTURA_CLEAN"]
+            if pd.notna(r["ID_FACTURA_CLEAN"]) and r["ID_FACTURA_CLEAN"] != ""
+            else f"FV{str(int(r['NIU_SUI'])).strip()}{mes_str}{anio_str}",
+            axis=1
+        )
         df["TIPO CORRI SALIDA"] = 1
         df["DIAS PRES MES"]  = df["cantidad"]
 
