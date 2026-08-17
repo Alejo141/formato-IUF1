@@ -135,14 +135,14 @@ if file_usuarios and file_fact:
 
         # --- Leer Facturación ---
         df_fact = pd.read_excel(file_fact, sheet_name=0)
-        cols_req_fac = ["nui sui","nfacturasiigo","cantidad"]
+        cols_req_fac = ["nui","nfacturasiigo","cantidad"]
         faltantes2 = [c for c in cols_req_fac if c not in df_fact.columns]
         if faltantes2:
             st.markdown(f'<div class="error-box">❌ Faltan columnas en Facturación: {faltantes2}</div>', unsafe_allow_html=True)
             st.stop()
 
         # Limpiar NIU en facturación
-        df_fact["NIU_KEY"] = df_fact["nui sui"].astype(str).str.replace("-","",regex=False).str.strip()
+        df_fact["NIU_KEY"] = df_fact["nui"].astype(str).str.replace("-","",regex=False).str.strip()
         df_fact["ID_FACTURA_CLEAN"] = df_fact["nfacturasiigo"].astype(str).str.replace("-","",regex=False).str.strip()
 
         # --- Cruce ---
